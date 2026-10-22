@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import type { ConnectionConfig } from '@shared/types'
+import { validateConnection } from '../utils/validator'
+import { DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_PORT } from '../composables/useConnections'
 
 const props = defineProps<{ initial: ConnectionConfig | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
@@ -11,12 +13,12 @@ const form = reactive({
   id: props.initial?.id || '',
   name: props.initial?.name || '',
   host: props.initial?.host || '',
-  port: props.initial?.port ?? 3389,
+  port: props.initial?.port ?? DEFAULT_PORT,
   username: props.initial?.username || '',
   domain: props.initial?.domain || '',
   fullscreen: props.initial?.fullscreen ?? true,
-  width: props.initial?.width ?? 1440,
-  height: props.initial?.height ?? 900,
+  width: props.initial?.width ?? DEFAULT_WIDTH,
+  height: props.initial?.height ?? DEFAULT_HEIGHT,
   redirectClipboard: props.initial?.redirectClipboard ?? true,
   redirectDrives: props.initial?.redirectDrives ?? false,
   audioMode: (props.initial?.audioMode ?? 1) as 0 | 1 | 2,
@@ -36,18 +38,18 @@ if (props.initial?.id && props.initial?.passwordEnc) {
   })
 }
 
-// 点击眼睛：切换明文/密文显示
-async function togglePassword() {
+// 切换明文/密文显示
+function togglePassword(): void {
   showPassword.value = !showPassword.value
 }
 
-async function save() {
+async function save(): Promise<void> {
   error.value = ''
-  if (!form.name.trim()) return (error.value = '请填写连接名称')
-  if (!form.host.trim()) return (error.value = '请填写服务器地址')
-  if (!/^[a-zA-Z0-9._-]+(:\d+)?$/.test(form.host.trim()))
-    return (error.value = '地址格式不正确（可用 IP / 主机名，可带 :端口）')
-  if (!form.username.trim()) return (error.value = '请填写账号')
+  const v = validateConnection(form)
+  if (!v.ok) {
+    error.value = v.error!
+    return
+  }
 
   let passwordEnc = props.initial?.passwordEnc
   if (form.password) {
@@ -61,13 +63,13 @@ async function save() {
     id: form.id,
     name: form.name.trim(),
     host: form.host.trim().split(':')[0],
-    port: form.port || 3389,
+    port: form.port || DEFAULT_PORT,
     username: form.username.trim(),
     domain: form.domain?.trim() || undefined,
     passwordEnc,
     fullscreen: form.fullscreen,
-    width: Number(form.width) || 1440,
-    height: Number(form.height) || 900,
+    width: Number(form.width) || DEFAULT_WIDTH,
+    height: Number(form.height) || DEFAULT_HEIGHT,
     redirectClipboard: form.redirectClipboard,
     redirectDrives: form.redirectDrives,
     audioMode: form.audioMode,
