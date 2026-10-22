@@ -1,0 +1,46 @@
+{
+  "name": "rdp-assistant",
+  "productName": "远程助手",
+  "version": "0.2.3",
+  "description": "便携的 RDP 远程桌面管理器（内置微软 RDP 连接）",
+  "main": "./out/main/index.js",
+  "author": "you",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "dist": "electron-vite build && electron-builder --win portable",
+    "start": "electron-vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  },
+  "build": {
+    "appId": "com.yuan.rdpassistant",
+    "productName": "远程助手",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "远程助手-Portable-${version}.exe"
+    }
+  }
+}
