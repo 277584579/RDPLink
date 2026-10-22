@@ -3,26 +3,10 @@ import { join, dirname } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { spawn } from 'child_process'
 import { randomUUID } from 'crypto'
+import type { ConnectionConfig, LaunchResult, ExportResult, ImportResult } from '@shared/types'
 
-// ---------- 类型 ----------
-export interface ConnectionConfig {
-  id: string
-  name: string
-  host: string // 支持-host 或 host:port
-  port: number
-  username: string
-  domain?: string
-  passwordEnc?: string // safeStorage 加密后的 base64
-  fullscreen: boolean
-  width: number
-  height: number
-  redirectClipboard: boolean
-  redirectDrives: boolean
-  audioMode: 0 | 1 | 2 // 0=本地播放 1=不播放 2=远程播放
-  lastConnectedAt?: number // 上次成功发起连接的时间
-  createdAt: number
-  updatedAt: number
-}
+// 重新导出，保持向后兼容（其他模块仍可从 main 导入）
+export type { ConnectionConfig } from '../shared/types'
 
 // ---------- 便携存储：打包后配置存在 exe 同级目录 ----------
 function dataDir(): string {
@@ -140,7 +124,7 @@ function buildRdp(c: ConnectionConfig): string {
 
 const activeCleanups = new Map<string, () => void>()
 
-async function launchConnection(c: ConnectionConfig): Promise<{ ok: boolean; error?: string }> {
+async function launchConnection(c: ConnectionConfig): Promise<LaunchResult> {
   try {
     const password = decryptPassword(c.passwordEnc)
     let credTargets: string[] = []
@@ -212,7 +196,7 @@ ipcMain.handle('app:getVersion', () => app.getVersion())
 // ---------- 导出 / 导入（用于分享给他人） ----------
 ipcMain.handle(
   'connections:export',
-  async (e): Promise<{ ok: boolean; count?: number; canceled?: boolean }> => {
+  async (e): Promise<ExportResult> => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return { ok: false }
     const list = loadConnections()
@@ -266,7 +250,7 @@ ipcMain.handle(
 
 ipcMain.handle(
   'connections:import',
-  async (e): Promise<{ ok: boolean; count?: number; canceled?: boolean; error?: string }> => {
+  async (e): Promise<ImportResult> => {
     const win = BrowserWindow.fromWebContents(e.sender)
     if (!win) return { ok: false }
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -337,6 +321,8 @@ app.whenReady().then(() => {
   // 去掉默认菜单栏（File/Edit/View 等调试菜单）
   Menu.setApplicationMenu(null)
 
+  // 启动加速：先以最小可见状态创建并显示窗口，让用户立刻看到界面，
+  // 再在事件循环空闲时加载页面、注册 IPC，避免冷启动时长时间白屏。
   const win = new BrowserWindow({
     width: 1100,
     height: 720,
@@ -344,6 +330,8 @@ app.whenReady().then(() => {
     minHeight: 600,
     title: '远程助手',
     icon: join(__dirname, '../../build/icon.png'),
+    show: false, // 先不显示，等 ready-to-show 或加载完成再显示，避免白屏闪烁
+    backgroundColor: '#1e1e2e', // 与应用背景色一致，减少白屏感
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -354,10 +342,22 @@ app.whenReady().then(() => {
   mainWindow = win
   win.on('closed', () => (mainWindow = null))
 
+  // 显示窗口：加载完成即显示；若加载超过 800ms 也强制显示（带 loading 背景）
+  let shown = false
+  const showWin = () => {
+    if (!shown) {
+      shown = true
+      win.show()
+    }
+  }
+  win.once('ready-to-show', showWin)
+  setTimeout(showWin, 800) // 兜底：超时也显示，避免长时间无响应
+
+  // 加载页面（开发模式走 HMR URL，否则加载本地文件）
   if (process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL)
+    void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    void win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 })
 

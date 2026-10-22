@@ -1,22 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { ConnectionConfig, LaunchResult, ExportResult, ImportResult } from '@shared/types'
 
-export interface ConnectionConfig {
-  id: string
-  name: string
-  host: string
-  port: number
-  username: string
-  domain?: string
-  passwordEnc?: string
-  fullscreen: boolean
-  width: number
-  height: number
-  redirectClipboard: boolean
-  redirectDrives: boolean
-  audioMode: 0 | 1 | 2
-  createdAt: number
-  updatedAt: number
-}
+export type { ConnectionConfig } from '../shared/types'
 
 const api = {
   listConnections: (): Promise<ConnectionConfig[]> => ipcRenderer.invoke('connections:list'),
@@ -24,11 +9,11 @@ const api = {
   deleteConnection: (id: string): Promise<boolean> => ipcRenderer.invoke('connections:delete', id),
   encryptPassword: (plain: string): Promise<string | undefined> => ipcRenderer.invoke('connections:encrypt', plain),
   revealPassword: (id: string): Promise<string> => ipcRenderer.invoke('connections:reveal', id),
-  launchConnection: (cfg: ConnectionConfig): Promise<{ ok: boolean; error?: string }> =>
+  launchConnection: (cfg: ConnectionConfig): Promise<LaunchResult> =>
     ipcRenderer.invoke('connection:launch', cfg),
-  exportConnections: (): Promise<{ ok: boolean; count?: number; canceled?: boolean }> =>
+  exportConnections: (): Promise<ExportResult> =>
     ipcRenderer.invoke('connections:export'),
-  importConnections: (): Promise<{ ok: boolean; count?: number; canceled?: boolean; error?: string }> =>
+  importConnections: (): Promise<ImportResult> =>
     ipcRenderer.invoke('connections:import'),
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion')
 }

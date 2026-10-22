@@ -1,25 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import ConnectionModal from './components/ConnectionModal.vue'
-
-interface ConnectionConfig {
-  id: string
-  name: string
-  host: string
-  port: number
-  username: string
-  domain?: string
-  passwordEnc?: string
-  fullscreen: boolean
-  width: number
-  height: number
-  redirectClipboard: boolean
-  redirectDrives: boolean
-  audioMode: 0 | 1 | 2
-  lastConnectedAt?: number
-  createdAt: number
-  updatedAt: number
-}
+import type { ConnectionConfig } from '@shared/types'
 
 const list = ref<ConnectionConfig[]>([])
 const showModal = ref(false)
@@ -28,9 +10,10 @@ const toast = ref('')
 const launchingId = ref('')
 const version = ref('')
 
-onMounted(async () => {
-  await refresh()
-  version.value = await window.api.getVersion()
+// 启动加速：挂载后并行加载连接列表与版本号，避免串行等待
+onMounted(() => {
+  void refresh()
+  void window.api.getVersion().then((v) => (version.value = v))
 })
 
 // 按最近连接时间排序，连过的排前面（最近在前），没连过的按创建时间排后面
@@ -55,11 +38,6 @@ function showToast(msg: string) {
 async function refresh() {
   list.value = await window.api.listConnections()
 }
-
-onMounted(async () => {
-  await refresh()
-  version.value = await window.api.getVersion()
-})
 
 function openCreate() {
   editing.value = null

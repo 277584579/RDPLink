@@ -5,6 +5,9 @@ import { resolve } from 'path'
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: { '@shared': resolve(__dirname, 'src/shared') }
+    },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/main/index.ts') }
@@ -13,6 +16,9 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: { '@shared': resolve(__dirname, 'src/shared') }
+    },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/preload/index.ts') }
@@ -22,6 +28,9 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, 'src/renderer'),
     plugins: [vue()],
+    resolve: {
+      alias: { '@shared': resolve(__dirname, 'src/shared') }
+    },
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/renderer/index.html') }

@@ -30,8 +30,10 @@
       "output": "release",
       "buildResources": "build"
     },
+    "asar": true,
     "files": [
-      "out/**/*"
+      "out/**/*",
+      "build/icon.png"
     ],
     "win": {
       "icon": "build/icon.png",

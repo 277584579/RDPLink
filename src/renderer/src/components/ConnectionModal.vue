@@ -1,23 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-
-interface ConnectionConfig {
-  id: string
-  name: string
-  host: string
-  port: number
-  username: string
-  domain?: string
-  passwordEnc?: string
-  fullscreen: boolean
-  width: number
-  height: number
-  redirectClipboard: boolean
-  redirectDrives: boolean
-  audioMode: 0 | 1 | 2
-  createdAt: number
-  updatedAt: number
-}
+import type { ConnectionConfig } from '@shared/types'
 
 const props = defineProps<{ initial: ConnectionConfig | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
