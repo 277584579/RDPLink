@@ -2,8 +2,8 @@
 node_modules/
 .pnpm-store/
 
-# Build output
-build/
+# Build output (electron-vite 产物 + electron-builder 打包输出)
+# 注意：build/ 是 electron-builder 的资源目录（图标、nsh、侧边图），属于源码，不应忽略
 out/
 dist/
 release/
