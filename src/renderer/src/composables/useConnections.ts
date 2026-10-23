@@ -26,6 +26,7 @@ export function createBlankConnection(): ConnectionConfig {
     height: DEFAULT_HEIGHT,
     redirectClipboard: true,
     redirectDrives: false,
+    redirectDrivesList: [],
     audioMode: 1,
     createdAt: 0,
     updatedAt: 0

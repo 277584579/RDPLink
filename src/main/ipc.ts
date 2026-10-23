@@ -3,7 +3,7 @@
  * 在主窗口创建前调用 registerIpc() 一次性注册全部 handler。
  */
 import { ipcMain, dialog, BrowserWindow, app } from 'electron'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, accessSync } from 'fs'
 import { randomUUID } from 'crypto'
 import type { ConnectionConfig, ExportResult, ImportResult } from '@shared/types'
 import { loadConnections, saveConnections, findConnection } from './store'
@@ -45,6 +45,9 @@ export function registerIpc(): void {
   })
 
   ipcMain.handle('connection:launch', (_e, cfg: ConnectionConfig) => launchConnection(cfg))
+
+  // ---------- 获取本机可用盘符（供前端选择重定向磁盘）----------
+  ipcMain.handle('drives:list', () => listLocalDrives())
 
   // ---------- 应用信息 ----------
   ipcMain.handle('app:isPackaged', () => app.isPackaged)
@@ -98,6 +101,7 @@ async function exportConnections(e: Electron.IpcMainInvokeEvent): Promise<Export
       height: c.height,
       redirectClipboard: c.redirectClipboard,
       redirectDrives: c.redirectDrives,
+      redirectDrivesList: c.redirectDrivesList,
       audioMode: c.audioMode,
       password: withPassword ? decryptPassword(c.passwordEnc) : ''
     }))
@@ -144,6 +148,7 @@ async function importConnections(e: Electron.IpcMainInvokeEvent): Promise<Import
         height: item.height || 900,
         redirectClipboard: item.redirectClipboard !== false,
         redirectDrives: !!item.redirectDrives,
+        redirectDrivesList: Array.isArray(item.redirectDrivesList) ? item.redirectDrivesList : undefined,
         audioMode: (item.audioMode ?? 1) as 0 | 1 | 2,
         createdAt: now,
         updatedAt: now
@@ -155,4 +160,33 @@ async function importConnections(e: Electron.IpcMainInvokeEvent): Promise<Import
   } catch (err: any) {
     return { ok: false, error: err?.message || '读取文件失败' }
   }
+}
+
+/**
+ * 获取本机可用盘符列表。
+ * 遍历 A-Z 检测驱动器是否存在，返回盘符 + 类型标签。
+ */
+function listLocalDrives(): { letter: string; label: string }[] {
+  const result: { letter: string; label: string }[] = []
+  for (let code = 65; code <= 90; code++) {
+    const letter = String.fromCharCode(code)
+    const root = `${letter}:\\`
+    try {
+      // accessSync 在盘符不存在时会抛错
+      accessSync(root)
+      // 获取卷标（可选，失败则用盘符兜底）
+      let label = `${letter}: 盘`
+      try {
+        // Windows 下 process.env 可读 SystemDrive 等，但卷标需 native API；
+        // 这里简单用盘符 + 是否系统盘标识
+        if (letter === 'C') label = `${letter}: 系统盘`
+      } catch {
+        /* ignore */
+      }
+      result.push({ letter, label })
+    } catch {
+      /* 盘符不存在，跳过 */
+    }
+  }
+  return result
 }

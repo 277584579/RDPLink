@@ -15,6 +15,7 @@ const api = {
     ipcRenderer.invoke('connections:export'),
   importConnections: (): Promise<ImportResult> =>
     ipcRenderer.invoke('connections:import'),
+  listDrives: (): Promise<{ letter: string; label: string }[]> => ipcRenderer.invoke('drives:list'),
   getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion')
 }
 

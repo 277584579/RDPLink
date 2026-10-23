@@ -30,8 +30,10 @@ export interface ConnectionConfig {
   height: number
   /** 剪贴板重定向 */
   redirectClipboard: boolean
-  /** 本地驱动器重定向 */
+  /** 本地驱动器重定向（总开关） */
   redirectDrives: boolean
+  /** 指定重定向的盘符列表，如 ['C','D']；为空或 undefined 表示重定向所有盘 */
+  redirectDrivesList?: string[]
   /** 音频模式：0=本地播放 1=不播放 2=远程播放 */
   audioMode: AudioMode
   /** 上次成功发起连接的时间戳 */

@@ -50,7 +50,11 @@ export function buildRdp(c: ConnectionConfig): string {
     'enablecredsspsupport:i:1',
     'authentication level:i:2',
     'redirectclipboard:i:' + (c.redirectClipboard ? 1 : 0),
-    'redirectdrives:i:' + (c.redirectDrives ? 1 : 0),
+    // 磁盘重定向：指定盘符时用 drivestoredirect 精确控制；否则全开/全关
+    'redirectdrives:i:' + (c.redirectDrives && !(c.redirectDrivesList && c.redirectDrivesList.length) ? 1 : 0),
+    c.redirectDrives && c.redirectDrivesList && c.redirectDrivesList.length
+      ? 'drivestoredirect:s:' + c.redirectDrivesList.map((d) => `${d}:\\`).join(';')
+      : '',
     'audiomode:i:' + c.audioMode,
     'redirectprinters:i:0',
     'redirectsmartcards:i:0',

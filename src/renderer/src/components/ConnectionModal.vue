@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import type { ConnectionConfig } from '@shared/types'
 import { validateConnection } from '../utils/validator'
 import { DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_PORT } from '../composables/useConnections'
@@ -21,6 +21,8 @@ const form = reactive({
   height: props.initial?.height ?? DEFAULT_HEIGHT,
   redirectClipboard: props.initial?.redirectClipboard ?? true,
   redirectDrives: props.initial?.redirectDrives ?? false,
+  // 选中的盘符列表；空数组表示重定向所有盘
+  redirectDrivesList: (props.initial?.redirectDrivesList ?? []) as string[],
   audioMode: (props.initial?.audioMode ?? 1) as 0 | 1 | 2,
   // 编辑时不回显密码，留空表示不修改
   password: '',
@@ -30,6 +32,17 @@ const keepPassword = ref(isEdit.value && !!props.initial?.passwordEnc)
 const showPassword = ref(false)
 const error = ref('')
 const saving = ref(false)
+
+// 本机可用盘符列表（从主进程获取）
+const drives = ref<{ letter: string; label: string }[]>([])
+
+onMounted(async () => {
+  try {
+    drives.value = await window.api.listDrives()
+  } catch {
+    drives.value = []
+  }
+})
 
 // 编辑时自动回显已保存的密码（以密文圆点显示，点眼睛可看明文）
 if (props.initial?.id && props.initial?.passwordEnc) {
@@ -41,6 +54,13 @@ if (props.initial?.id && props.initial?.passwordEnc) {
 // 切换明文/密文显示
 function togglePassword(): void {
   showPassword.value = !showPassword.value
+}
+
+// 切换盘符选中
+function toggleDrive(letter: string): void {
+  const idx = form.redirectDrivesList.indexOf(letter)
+  if (idx >= 0) form.redirectDrivesList.splice(idx, 1)
+  else form.redirectDrivesList.push(letter)
 }
 
 async function save(): Promise<void> {
@@ -72,6 +92,7 @@ async function save(): Promise<void> {
     height: Number(form.height) || DEFAULT_HEIGHT,
     redirectClipboard: form.redirectClipboard,
     redirectDrives: form.redirectDrives,
+    redirectDrivesList: form.redirectDrives ? form.redirectDrivesList : [],
     audioMode: form.audioMode,
     createdAt: props.initial?.createdAt || 0,
     updatedAt: 0
@@ -146,6 +167,20 @@ async function save(): Promise<void> {
           <label><input v-model="form.redirectClipboard" type="checkbox" />剪贴板重定向</label>
           <label><input v-model="form.redirectDrives" type="checkbox" />磁盘重定向</label>
           <label v-if="isEdit"><input v-model="keepPassword" type="checkbox" />保留已存密码</label>
+        </div>
+        <div v-if="form.redirectDrives" class="form-row full">
+          <label>重定向磁盘（不选则重定向所有盘）</label>
+          <div class="drive-grid">
+            <label v-for="d in drives" :key="d.letter" class="drive-item">
+              <input
+                type="checkbox"
+                :checked="form.redirectDrivesList.includes(d.letter)"
+                @change="toggleDrive(d.letter)"
+              />
+              {{ d.label }}
+            </label>
+            <span v-if="drives.length === 0" class="hint">未检测到可用磁盘</span>
+          </div>
         </div>
       </div>
 
