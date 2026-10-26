@@ -10,6 +10,7 @@ import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { registerIpc } from './ipc'
 import { cleanupAllConnections } from './rdp'
+import { migrateLegacyStore } from './store'
 
 // 单实例锁：二次启动时唤起已有窗口而不是再开一个进程
 let mainWindow: BrowserWindow | null = null
@@ -27,6 +28,9 @@ if (!gotSingleInstanceLock) {
 }
 
 app.whenReady().then(() => {
+  // 迁移旧版 exe 同目录的数据到用户目录（如有）
+  migrateLegacyStore()
+
   // 去掉默认菜单栏（File/Edit/View 等调试菜单）
   Menu.setApplicationMenu(null)
 

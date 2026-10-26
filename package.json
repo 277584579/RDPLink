@@ -1,7 +1,7 @@
 {
   "name": "rdp-assistant",
   "productName": "远程助手",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "便携的 RDP 远程桌面管理器（内置微软 RDP 连接）",
   "main": "./out/main/index.js",
   "author": "you",
