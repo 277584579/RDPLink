@@ -79,24 +79,29 @@ async function save(): Promise<void> {
   }
 
   saving.value = true
-  await window.api.saveConnection({
-    id: form.id,
-    name: form.name.trim(),
-    host: form.host.trim().split(':')[0],
-    port: form.port || DEFAULT_PORT,
-    username: form.username.trim(),
-    domain: form.domain?.trim() || undefined,
-    passwordEnc,
-    fullscreen: form.fullscreen,
-    width: Number(form.width) || DEFAULT_WIDTH,
-    height: Number(form.height) || DEFAULT_HEIGHT,
-    redirectClipboard: form.redirectClipboard,
-    redirectDrives: form.redirectDrives,
-    redirectDrivesList: form.redirectDrives ? form.redirectDrivesList : [],
-    audioMode: form.audioMode,
-    createdAt: props.initial?.createdAt || 0,
-    updatedAt: 0
-  })
+  // Vue reactive 对象（含数组 redirectDrivesList）是 Proxy，无法被 IPC 结构化克隆，
+  // 必须先转成纯对象，否则 IPC 调用会挂起（表现为"保存中…"卡住）
+  const payload = JSON.parse(
+    JSON.stringify({
+      id: form.id,
+      name: form.name.trim(),
+      host: form.host.trim().split(':')[0],
+      port: form.port || DEFAULT_PORT,
+      username: form.username.trim(),
+      domain: form.domain?.trim() || undefined,
+      passwordEnc,
+      fullscreen: form.fullscreen,
+      width: Number(form.width) || DEFAULT_WIDTH,
+      height: Number(form.height) || DEFAULT_HEIGHT,
+      redirectClipboard: form.redirectClipboard,
+      redirectDrives: form.redirectDrives,
+      redirectDrivesList: form.redirectDrives ? form.redirectDrivesList : [],
+      audioMode: form.audioMode,
+      createdAt: props.initial?.createdAt || 0,
+      updatedAt: 0
+    })
+  ) as ConnectionConfig
+  await window.api.saveConnection(payload)
   saving.value = false
   emit('saved')
 }
